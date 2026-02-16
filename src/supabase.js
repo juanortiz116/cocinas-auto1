@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════
    OPSPILOT KITCHENS — Supabase Client
    Database connection for persisting designs
+   Phase 2: Uses `designs` table with `room_data`
    ═══════════════════════════════════════════════ */
 
 import { createClient } from '@supabase/supabase-js';
@@ -15,18 +16,20 @@ if (!SUPABASE_URL || !SUPABASE_ANON) {
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 /**
- * Save a kitchen design (insert or update).
- * @param {object} roomState - the current room state
+ * Save a kitchen design (upsert — insert or update).
+ * @param {object} roomState - the current room state (saved as room_data)
  * @param {string|null} id - if provided, updates existing record
  * @param {string} name - design name
  * @returns {Promise<{data: object|null, error: object|null}>}
  */
 export async function saveDesign(roomState, id = null, name = 'Mi Cocina') {
+    const payload = { name, room_data: roomState };
+
     if (id) {
         // Update existing
         const { data, error } = await supabase
-            .from('kitchen_designs')
-            .update({ room_state: roomState, name })
+            .from('designs')
+            .update(payload)
             .eq('id', id)
             .select()
             .single();
@@ -34,8 +37,8 @@ export async function saveDesign(roomState, id = null, name = 'Mi Cocina') {
     } else {
         // Insert new
         const { data, error } = await supabase
-            .from('kitchen_designs')
-            .insert({ room_state: roomState, name })
+            .from('designs')
+            .insert(payload)
             .select()
             .single();
         return { data, error };
@@ -49,7 +52,7 @@ export async function saveDesign(roomState, id = null, name = 'Mi Cocina') {
  */
 export async function loadDesign(id) {
     const { data, error } = await supabase
-        .from('kitchen_designs')
+        .from('designs')
         .select('*')
         .eq('id', id)
         .single();
@@ -62,9 +65,9 @@ export async function loadDesign(id) {
  */
 export async function listDesigns() {
     const { data, error } = await supabase
-        .from('kitchen_designs')
-        .select('id, name, created_at, updated_at')
-        .order('updated_at', { ascending: false });
+        .from('designs')
+        .select('id, name, created_at')
+        .order('created_at', { ascending: false });
     return { data, error };
 }
 
@@ -75,7 +78,7 @@ export async function listDesigns() {
  */
 export async function deleteDesign(id) {
     const { error } = await supabase
-        .from('kitchen_designs')
+        .from('designs')
         .delete()
         .eq('id', id);
     return { error };

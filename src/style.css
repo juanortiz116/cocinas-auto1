@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    OPSPILOT KITCHENS — Design System & Layout
-   Phase 1: Spatial Engine
+   Phase 3: Solver + Budget Engine
    ═══════════════════════════════════════════════ */
 
 /* ── Tokens ────────────────────────────────── */
@@ -22,6 +22,7 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'Roboto Mono', 'Fira Code', monospace;
   --panel-width: 300px;
+  --budget-height: 260px;
 }
 
 /* ── Reset ─────────────────────────────────── */
@@ -444,14 +445,232 @@ body {
   background: rgba(239, 68, 68, 0.1);
 }
 
+/* ── Obstacle Toolbar ──────────────────────── */
+.toolbar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 4px 8px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+
+.tool-btn:hover {
+  border-color: var(--tool-color, var(--accent));
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tool-btn.active {
+  border-color: var(--tool-color, var(--accent));
+  background: var(--accent-dim);
+  box-shadow: 0 0 14px rgba(57, 206, 134, 0.2);
+}
+
+.tool-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.tool-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.tool-btn.active .tool-label {
+  color: var(--accent);
+}
+
+.toolbar-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+  animation: fadeSlideIn 0.2s ease-out;
+}
+
+.toolbar-hint.muted {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ── Obstacle Properties ──────────────────────── */
+#obstacle-properties-section.hidden {
+  display: none;
+}
+
+.props-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.props-type {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.props-wall {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── Danger Button ─────────────────────────── */
+.sl-btn-danger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px 6px;
+  margin-top: 12px;
+  background: transparent;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--danger);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.sl-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.15);
+}
+
 /* ═══════════════════════════════════════════════
-   RIGHT VIEWER
+   GENERATE BUTTON
    ═══════════════════════════════════════════════ */
+.generate-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 2px 16px var(--accent-glow);
+  position: relative;
+  overflow: hidden;
+}
+
+.generate-btn:hover {
+  background: #2fb876;
+  box-shadow: 0 4px 28px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.generate-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 8px var(--accent-glow);
+}
+
+.generate-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
+
+.generate-btn.loading {
+  background: #2fb876;
+}
+
+.generate-btn .hidden {
+  display: none;
+}
+
+/* Spinner animation */
+.generate-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Solver Errors ─────────────────────────── */
+#solver-errors {
+  margin-top: 10px;
+}
+
+.solver-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius);
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  animation: fadeSlideIn 0.3s ease-out;
+}
+
+.solver-error svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--danger);
+}
+
+/* ═══════════════════════════════════════════════
+   RIGHT AREA (Canvas + Budget)
+   ═══════════════════════════════════════════════ */
+#right-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 #viewer {
   flex: 1;
   position: relative;
   background: var(--bg);
   overflow: hidden;
+  min-height: 0;
 }
 
 #kitchen-canvas {
@@ -483,6 +702,155 @@ body {
 }
 
 /* ═══════════════════════════════════════════════
+   BUDGET PANEL (bottom of right area)
+   ═══════════════════════════════════════════════ */
+.budget-panel {
+  height: var(--budget-height);
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUpIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.budget-panel.hidden {
+  display: none;
+}
+
+@keyframes slideUpIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.budget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.budget-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.budget-title svg {
+  color: var(--accent);
+}
+
+.budget-total {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+.budget-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 20px 16px;
+  display: flex;
+  gap: 20px;
+}
+
+/* ── Budget Sections ──────────────────────── */
+.budget-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.budget-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Budget Table ─────────────────────────── */
+.budget-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.budget-table th {
+  text-align: left;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.budget-table td {
+  padding: 4px 6px;
+  color: var(--text-dim);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  white-space: nowrap;
+}
+
+.budget-table tr:last-child td {
+  border-bottom: none;
+}
+
+.budget-qty {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent) !important;
+  text-align: center;
+  width: 30px;
+}
+
+.budget-ref {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text-muted) !important;
+  font-size: 10px;
+}
+
+.budget-price {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-align: right !important;
+  color: var(--text) !important;
+}
+
+.budget-subtotal {
+  border-top: 1px solid var(--border) !important;
+}
+
+.budget-subtotal td {
+  font-weight: 700;
+  color: var(--text) !important;
+  padding-top: 6px;
+  border-bottom: none !important;
+}
+
+/* ═══════════════════════════════════════════════
    ANIMATIONS
    ═══════════════════════════════════════════════ */
 @keyframes fadeSlideIn {
@@ -495,6 +863,79 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ── Floating Save Button (top-right of canvas) ── */
+.floating-save-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+
+.floating-save-btn:hover {
+  background: #2fb876;
+  box-shadow: 0 4px 24px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.floating-save-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 6px var(--accent-glow);
+}
+
+.floating-save-btn.saving {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* ── Save Toast ─────────────────────────────── */
+.save-toast {
+  position: absolute;
+  top: 62px;
+  right: 16px;
+  z-index: 20;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: all 0.3s ease;
+}
+
+.save-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.save-toast.success {
+  background: rgba(57, 206, 134, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(57, 206, 134, 0.3);
+}
+
+.save-toast.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 /* ── Scrollbar ──────────────────────────────── */

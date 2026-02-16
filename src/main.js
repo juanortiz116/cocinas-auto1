@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════
    OPSPILOT KITCHENS — Main Entry Point
-   Phase 1: Spatial Engine & 2D Viewer
+   Phase 2: Obstacles & Persistence
    ═══════════════════════════════════════════════ */
 
 import './style.css';
@@ -17,13 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. Initialize the control panel
   initPanel();
 
-  // 3. Wire state → canvas re-render
-  subscribe((state) => {
-    render(state);
+  // 3. Wire state → canvas re-render (now includes UI state)
+  subscribe((state, ui) => {
+    render(state, ui);
   });
 
   // 4. Trigger initial render
   initState();
 
-  console.log('🟢 Opspilot Kitchens — Phase 1 loaded');
+  console.log('🟢 Opspilot Kitchens — Phase 2 loaded');
 });

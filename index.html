@@ -25,7 +25,7 @@
         </svg>
         <span class="logo-text">Opspilot <strong>Kitchens</strong></span>
       </div>
-      <span class="badge">FASE 1</span>
+      <span class="badge">FASE 3</span>
     </header>
 
     <!-- Geometry Selector -->
@@ -42,6 +42,38 @@
       <div id="inputs-container">
         <!-- Populated by panel.js -->
       </div>
+    </section>
+
+    <!-- Obstacle Toolbar -->
+    <section class="panel-section">
+      <h3 class="section-title">Elementos Estructurales</h3>
+      <div id="obstacles-toolbar">
+        <!-- Populated by panel.js -->
+      </div>
+    </section>
+
+    <!-- Obstacle Properties (shown when obstacle selected) -->
+    <section class="panel-section hidden" id="obstacle-properties-section">
+      <h3 class="section-title">Propiedades del Elemento</h3>
+      <div id="obstacle-properties">
+        <!-- Populated by panel.js -->
+      </div>
+    </section>
+
+    <!-- ═══ GENERATE BUTTON ═══ -->
+    <section class="panel-section">
+      <button id="btn-generate" class="generate-btn">
+        <svg class="generate-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+        <span class="generate-text">GENERAR PROPUESTA</span>
+        <svg class="generate-spinner hidden" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-linecap="round" />
+        </svg>
+      </button>
+      <div id="solver-errors"></div>
     </section>
 
     <!-- Save / Load -->
@@ -61,14 +93,50 @@
     </section>
   </aside>
 
-  <!-- ═══ RIGHT VIEWER ═══ -->
-  <main id="viewer">
-    <canvas id="kitchen-canvas"></canvas>
-    <div class="viewer-hud">
-      <span id="hud-shape">LINEAR</span>
-      <span id="hud-scale"></span>
-    </div>
-  </main>
+  <!-- ═══ RIGHT AREA (Canvas + Budget) ═══ -->
+  <div id="right-area">
+    <!-- Canvas Viewer -->
+    <main id="viewer">
+      <canvas id="kitchen-canvas"></canvas>
+
+      <!-- Floating Save Button (top-right) -->
+      <button id="btn-save-floating" class="floating-save-btn" title="Guardar proyecto en Supabase">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+          <polyline points="17 21 17 13 7 13 7 21" />
+          <polyline points="7 3 7 8 15 8" />
+        </svg>
+        GUARDAR PROYECTO
+      </button>
+
+      <!-- Toast notification -->
+      <div id="save-toast" class="save-toast"></div>
+
+      <div class="viewer-hud">
+        <span id="hud-shape">LINEAR</span>
+        <span id="hud-scale"></span>
+      </div>
+    </main>
+
+    <!-- ═══ BUDGET PANEL (bottom) ═══ -->
+    <aside id="budget-panel" class="budget-panel hidden">
+      <div class="budget-header">
+        <h3 class="budget-title">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+          Presupuesto
+        </h3>
+        <div class="budget-total" id="budget-total">0 €</div>
+      </div>
+      <div class="budget-body" id="budget-body">
+        <!-- Populated by panel.js -->
+      </div>
+    </aside>
+  </div>
 
   <script type="module" src="/src/main.js"></script>
 </body>
