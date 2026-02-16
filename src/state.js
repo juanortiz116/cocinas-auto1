@@ -155,17 +155,7 @@ export function selectWall(wallId) {
   uiState.selectedWallId = wallId;
   uiState.selectedObstacleId = null;
 
-  // If a tool is active, add obstacle to the selected wall
-  if (uiState.activeTool && wallId) {
-    const wall = roomState.walls.find(w => w.id === wallId);
-    if (wall) {
-      const defaultPos = Math.round(wall.length / 2);
-      const obs = createObstacle(uiState.activeTool, defaultPos, DEFAULT_WIDTHS[uiState.activeTool]);
-      wall.obstacles.push(obs);
-      uiState.selectedObstacleId = obs.id;
-      uiState.activeTool = null; // Deactivate tool after placing
-    }
-  }
+  // Logic moved to canvas interaction (click-to-place)
 
   notify();
 }
@@ -210,11 +200,19 @@ export function addObstacleToWall(wallId, type) {
   const wall = roomState.walls.find(w => w.id === wallId);
   if (!wall) return;
   const defaultPos = Math.round(wall.length / 2);
-  const obs = createObstacle(type, defaultPos, DEFAULT_WIDTHS[type]);
+  addObstacleToWallAt(wallId, type, defaultPos);
+}
+
+export function addObstacleToWallAt(wallId, type, position) {
+  const wall = roomState.walls.find(w => w.id === wallId);
+  if (!wall) return;
+  const obs = createObstacle(type, position, DEFAULT_WIDTHS[type]);
   wall.obstacles.push(obs);
   uiState.selectedObstacleId = obs.id;
   uiState.selectedWallId = wallId;
+  uiState.activeTool = null; // Consume tool
   notify();
+  return obs;
 }
 
 export function updateObstacle(obstacleId, patch) {

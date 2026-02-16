@@ -1,9 +1,10 @@
 /* ═══════════════════════════════════════════════
    OPSPILOT KITCHENS — 2D Canvas Grid Engine
    Phase 3: Wall selection + Obstacles + Modules
+   Phase 4: Precision Placement + Drag & Drop
    ═══════════════════════════════════════════════ */
 
-import { selectWall, selectObstacle, clearSelection, getUIState } from './state.js';
+import { selectWall, selectObstacle, clearSelection, getUIState, updateObstacle, addObstacleToWallAt } from './state.js';
 import { MODULE_TYPES } from './catalog.js';
 
 const COLORS = {
@@ -58,6 +59,13 @@ let lastOffset = { x: 0, y: 0 };
 /** Computed wall segments in screen coords for hit-testing */
 let wallSegments = [];
 
+// Interaction state
+let isDragging = false;
+let dragObstacleId = null;
+let dragWallId = null;
+let dragStartPos = 0; // Mouse position (mm) relative to wall start at drag begin
+let obsStartPos = 0;  // Obstacle position (mm) at drag begin
+
 /* ── Init ─────────────────────────────────────── */
 
 export function initCanvas(canvasEl) {
@@ -76,7 +84,12 @@ export function initCanvas(canvasEl) {
     };
 
     window.addEventListener('resize', resize);
-    canvas.addEventListener('click', handleCanvasClick);
+
+    // Mouse Event Listeners for Interaction
+    canvas.addEventListener('mousedown', handleMouseDown);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp); // Listen on window for release
+
     resize();
 }
 
@@ -106,6 +119,221 @@ export function render(state, ui) {
     drawDimensions(state, scale, offset);
     drawOriginMark(scale, offset);
     updateHUD(state, scale);
+}
+
+/* ── Interaction Handlers ────────────────────── */
+
+function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+    };
+}
+
+function handleMouseDown(e) {
+    const { x, y } = getMousePos(e);
+    const ui = getUIState();
+
+    // 1. If tool is active, try to PLACE obstacle
+    if (ui.activeTool) {
+        const hitWall = hitTestWall(x, y);
+        if (hitWall) {
+            const posMM = getWallPositionMM(hitWall, x, y);
+            addObstacleToWallAt(hitWall.id, ui.activeTool, posMM);
+            // Tool is consumed in addObstacleToWallAt
+        } else {
+            // Clicked outside wall with tool active -> cancel or clear selection
+            clearSelection();
+        }
+        return;
+    }
+
+    // 2. If no tool, check if clicking on OBSTACLE (Select or start Drag)
+    const hitObs = hitTestObstacle(x, y);
+    if (hitObs) {
+        selectObstacle(hitObs.obs.id);
+
+        // Initiate Drag
+        isDragging = true;
+        dragObstacleId = hitObs.obs.id;
+        dragWallId = hitObs.wall.id;
+
+        // Calculate offset for smooth dragging
+        const wallSeg = getWallScreenCoords(dragWallId);
+        const mouseMm = getWallPositionMM(wallSeg, x, y);
+
+        dragStartPos = mouseMm;
+        obsStartPos = hitObs.obs.position;
+        return;
+    }
+
+    // 3. Check if clicking on WALL (Select)
+    const hitWall = hitTestWall(x, y);
+    if (hitWall) {
+        selectWall(hitWall.id);
+        return;
+    }
+
+    // 4. Clicked on nothing
+    clearSelection();
+}
+
+function handleMouseMove(e) {
+    const { x, y } = getMousePos(e);
+    const ui = getUIState();
+
+    // Cursor updates
+    let cursor = 'default';
+    if (ui.activeTool) {
+        const hitWall = hitTestWall(x, y);
+        if (hitWall) cursor = 'crosshair';
+    } else if (isDragging) {
+        cursor = 'grabbing';
+    } else {
+        const hitObs = hitTestObstacle(x, y);
+        if (hitObs) cursor = 'grab';
+        else if (hitTestWall(x, y)) cursor = 'pointer';
+    }
+    canvas.style.cursor = cursor;
+
+    // Drag Logic
+    if (isDragging && dragObstacleId && dragWallId) {
+        const wallSeg = getWallScreenCoords(dragWallId);
+        if (wallSeg) {
+            const mouseMm = getWallPositionMM(wallSeg, x, y);
+            const delta = mouseMm - dragStartPos;
+            let newPos = obsStartPos + delta;
+
+            // Clamp to wall length
+            const wall = lastState.walls.find(w => w.id === dragWallId);
+            if (wall) {
+                newPos = Math.max(0, Math.min(newPos, wall.length));
+                // Update state
+                updateObstacle(dragObstacleId, { position: Math.round(newPos) });
+            }
+        }
+    }
+}
+
+function handleMouseUp(e) {
+    if (isDragging) {
+        isDragging = false;
+        dragObstacleId = null;
+        dragWallId = null;
+        canvas.style.cursor = 'grab'; // Restore cursor if still over obstacle
+    }
+}
+
+/* ── Hit Testing Helpers ─────────────────────── */
+
+/** Retrieve the wall segment under the mouse */
+function hitTestWall(mx, my) {
+    for (const seg of wallSegments) {
+        if (distToSegment(mx, my, seg.x1, seg.y1, seg.x2, seg.y2) < WALL_HIT_DISTANCE) {
+            return seg;
+        }
+    }
+    return null;
+}
+
+/** Retrieve the obstacle under the mouse */
+function hitTestObstacle(mx, my) {
+    if (!lastState) return null;
+    for (const wall of lastState.walls) {
+        if (!wall.obstacles) continue;
+        const seg = getWallScreenCoords(wall.id);
+        if (!seg) continue;
+
+        for (const obs of wall.obstacles) {
+            if (isClickOnObstacle(mx, my, obs, seg, lastScale)) {
+                return { obs, wall };
+            }
+        }
+    }
+    return null;
+}
+
+/** Convert screen X,Y to millimeter position along a wall segment */
+function getWallPositionMM(seg, mx, my) {
+    if (!seg) return 0;
+
+    const dx = seg.x2 - seg.x1;
+    const dy = seg.y2 - seg.y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return 0;
+
+    // Project point onto line segment (t = 0..1)
+    let t = ((mx - seg.x1) * dx + (my - seg.y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+
+    // Calculate distance from start in pixels
+    // Note: Instead of using t * totalLength, we compute actual pixel distance to projection point
+    const projX = seg.x1 + t * dx;
+    const projY = seg.y1 + t * dy;
+    const distPx = Math.hypot(projX - seg.x1, projY - seg.y1);
+
+    // Convert to mm
+    return Math.round(distPx / lastScale);
+}
+
+function isClickOnObstacle(mx, my, obs, seg, scale) {
+    const posPx = obs.position * scale;
+    const widPx = obs.width * scale;
+    const isHoriz = seg.orientation === 'horizontal';
+
+    let cx, cy;
+    if (isHoriz) {
+        cx = seg.x1 + posPx;
+        cy = seg.y1;
+    } else {
+        cx = seg.x1;
+        cy = seg.y1 + posPx;
+    }
+
+    // For points (water/smoke)
+    if (obs.type === 'water_point' || obs.type === 'smoke_outlet') {
+        const dist = Math.hypot(mx - cx, my - cy);
+        return dist < POINT_RADIUS + 6;
+    }
+
+    // For rectangles (window/door/column)
+    const margin = 6;
+    if (isHoriz) {
+        // Obstacle is centered at cx, cy-H/2 (above line) or cy (on line)?
+        // drawWindow logic: rect(x - width/2, y - h/2, width, h)
+        // Check bounds
+        return mx >= cx - widPx / 2 - margin && mx <= cx + widPx / 2 + margin &&
+            my >= cy - OBSTACLE_HEIGHT - margin && my <= cy + OBSTACLE_HEIGHT + margin;
+    } else {
+        return mx >= cx - OBSTACLE_HEIGHT - margin && mx <= cx + OBSTACLE_HEIGHT + margin &&
+            my >= cy - widPx / 2 - margin && my <= cy + widPx / 2 + margin;
+    }
+}
+
+function distToSegment(x, y, x1, y1, x2, y2) {
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    let param = -1;
+    if (len_sq !== 0) param = dot / len_sq;
+    let xx, yy;
+    if (param < 0) {
+        xx = x1;
+        yy = y1;
+    } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+    } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
+    }
+    const dx = x - xx;
+    const dy = y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
 }
 
 /* ── Bounding Box ────────────────────────────── */
@@ -169,6 +397,38 @@ function buildWallSegments(state, scale, offset) {
                 x2: ox, y2: oy + wallB.length * scale,
                 orientation: 'vertical',
             });
+        }
+    }
+
+    if (state.shape === 'U-SHAPED') {
+        const wallA = state.walls.find(w => w.id === 'wall-A');
+        const wallB = state.walls.find(w => w.id === 'wall-B');
+        const wallC = state.walls.find(w => w.id === 'wall-C');
+
+        if (wallA && wallB && wallC) {
+            // Wall C starts at the end of Wall A and goes down (parallel to B)
+            // Wait, U-shape: usually Wall B (left), Wall A (top), Wall C (right)?
+            // Or Wall A (main), Wall B (left side), Wall C (right side)?
+            // Let's check buildInitialState in state.js
+            /*
+              if (shape === SHAPES.U_SHAPED) {
+                base.walls.push(createWall('wall-B', 2000, 'side'));
+                base.walls.push(createWall('wall-C', 3000, 'side'));
+              }
+            */
+            // Visualizing standard U-shape logic:
+            // Often A is bottom/top, B and C are sides.
+            // My previous implementation only drew Wall A and B for L-shape.
+            // Let's check `buildWallSegments` from previous state.
+            // It only had logic for A and B. I should add C if I want U-shape fully working.
+            // But let's stick to what was there to avoid regression, or improve it?
+            // User didn't ask for U-shape fix, they asked for "Click-to-Add".
+            // I'll stick to A and B for now unless I see C logic elsewhere.
+            // Looking at previous file content, it had:
+            // if (state.shape === 'L-SHAPED' || state.shape === 'U-SHAPED') { ... wall-B ... }
+            // It did NOT seem to have wall-C logic in visualizer.
+            // Wait, I should add it if I want U-shape to work, but let's prioritize the request.
+            // I'll add a TODO comment or just leave as is.
         }
     }
 }
@@ -734,93 +994,15 @@ function updateHUD(state, scale) {
     if (scaleEl) scaleEl.textContent = `1px = ${Math.round(1 / scale)} mm`;
 }
 
-/* ── Click Handling ───────────────────────────── */
-
-function handleCanvasClick(e) {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-
-    // Check obstacles first (more precise targets)
-    if (lastState) {
-        for (const wall of lastState.walls) {
-            if (!wall.obstacles) continue;
-            const seg = getWallScreenCoords(wall.id);
-            if (!seg) continue;
-
-            for (const obs of wall.obstacles) {
-                if (isClickOnObstacle(mx, my, obs, seg, lastScale)) {
-                    selectObstacle(obs.id);
-                    return;
-                }
-            }
-        }
-    }
-
-    // Check walls
-    for (const seg of wallSegments) {
-        if (distToSegment(mx, my, seg.x1, seg.y1, seg.x2, seg.y2) < WALL_HIT_DISTANCE) {
-            selectWall(seg.id);
-            return;
-        }
-    }
-
-    // Clicked on nothing
-    clearSelection();
-}
-
-function isClickOnObstacle(mx, my, obs, seg, scale) {
-    const posPx = obs.position * scale;
-    const widPx = obs.width * scale;
-    const isHoriz = seg.orientation === 'horizontal';
-
-    let cx, cy;
-    if (isHoriz) {
-        cx = seg.x1 + posPx;
-        cy = seg.y1;
-    } else {
-        cx = seg.x1;
-        cy = seg.y1 + posPx;
-    }
-
-    // For points (water/smoke)
-    if (obs.type === 'water_point' || obs.type === 'smoke_outlet') {
-        return Math.hypot(mx - cx, my - cy) < POINT_RADIUS + 6;
-    }
-
-    // For rectangles (window/door/column)
-    const margin = 6;
-    if (isHoriz) {
-        return mx >= cx - widPx / 2 - margin && mx <= cx + widPx / 2 + margin &&
-            my >= cy - OBSTACLE_HEIGHT - margin && my <= cy + OBSTACLE_HEIGHT + margin;
-    } else {
-        return mx >= cx - OBSTACLE_HEIGHT - margin && mx <= cx + OBSTACLE_HEIGHT + margin &&
-            my >= cy - widPx / 2 - margin && my <= cy + widPx / 2 + margin;
-    }
-}
-
-/** Distance from point (px,py) to line segment (x1,y1)-(x2,y2) */
-function distToSegment(px, py, x1, y1, x2, y2) {
-    const dx = x2 - x1, dy = y2 - y1;
-    const len2 = dx * dx + dy * dy;
-    if (len2 === 0) return Math.hypot(px - x1, py - y1);
-    let t = ((px - x1) * dx + (py - y1) * dy) / len2;
-    t = Math.max(0, Math.min(1, t));
-    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
-}
-
-/* ── Helpers ──────────────────────────────────── */
-
+// Keep roundRect helper
 function roundRect(x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
     ctx.beginPath();
     ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
 }
