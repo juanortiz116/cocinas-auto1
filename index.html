@@ -25,7 +25,10 @@
         </svg>
         <span class="logo-text">Opspilot <strong>Kitchens</strong></span>
       </div>
-      <span class="badge">FASE 3</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <a href="/admin.html" style="font-size:11px; color:#64748b; text-decoration:none; font-weight:600;">ADMIN</a>
+        <span class="badge">FASE 3</span>
+      </div>
     </header>
 
     <!-- Geometry Selector -->
@@ -98,6 +101,12 @@
     <!-- Canvas Viewer -->
     <main id="viewer">
       <canvas id="kitchen-canvas"></canvas>
+      <div id="view-3d" class="hidden"></div>
+
+      <div class="view-controls">
+        <button id="btn-2d" class="active">2D</button>
+        <button id="btn-3d">3D</button>
+      </div>
 
       <!-- Floating Save Button (top-right) -->
       <button id="btn-save-floating" class="floating-save-btn" title="Guardar proyecto en Supabase">
