@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#111a23" />
+  <meta name="description" content="Opspilot Kitchens — Diseñador paramétrico de cocinas profesional" />
+  <title>Opspilot Kitchens</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+</head>
+
+<body>
+  <!-- ═══ LEFT PANEL ═══ -->
+  <aside id="control-panel">
+    <header class="panel-header">
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="6" fill="#39ce86" />
+          <path d="M8 14h12M14 8v12" stroke="#111a23" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+        <span class="logo-text">Opspilot <strong>Kitchens</strong></span>
+      </div>
+      <span class="badge">FASE 1</span>
+    </header>
+
+    <!-- Geometry Selector -->
+    <section class="panel-section">
+      <h3 class="section-title">Geometría de Planta</h3>
+      <div id="geometry-selector" class="geometry-grid">
+        <!-- Populated by panel.js -->
+      </div>
+    </section>
+
+    <!-- Parametric Inputs -->
+    <section class="panel-section">
+      <h3 class="section-title">Dimensiones</h3>
+      <div id="inputs-container">
+        <!-- Populated by panel.js -->
+      </div>
+    </section>
+
+    <!-- Save / Load -->
+    <section class="panel-section">
+      <h3 class="section-title">Proyecto</h3>
+      <div id="save-load-container">
+        <!-- Populated by panel.js -->
+      </div>
+    </section>
+
+    <!-- Room State Debug (collapsible) -->
+    <section class="panel-section panel-footer">
+      <details>
+        <summary class="section-title" style="cursor:pointer;">Estado del Room</summary>
+        <pre id="state-debug"></pre>
+      </details>
+    </section>
+  </aside>
+
+  <!-- ═══ RIGHT VIEWER ═══ -->
+  <main id="viewer">
+    <canvas id="kitchen-canvas"></canvas>
+    <div class="viewer-hud">
+      <span id="hud-shape">LINEAR</span>
+      <span id="hud-scale"></span>
+    </div>
+  </main>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
