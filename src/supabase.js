@@ -5,8 +5,12 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://yuuwegeabyacmsktynwt.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1dXdlZ2VhYnlhY21za3R5bnd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMzA0OTMsImV4cCI6MjA4NjgwNjQ5M30.Ua77KTf0fcXkNgsKFY0ZyCFidY7Ixq30hH0p6ggLk1s';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON) {
+    console.warn('⚠️ Supabase credentials missing! Check .env file.');
+}
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
